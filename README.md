@@ -30,14 +30,8 @@ PayPal is probably the easiest route.
 Feel free to donate towards buying me energy drinks and flowers for my to apologize for not going to bed at the same time as her.
 If you donate, you'll be added to the credits of the game, and you'll optionally get notified about the status of the game.
 
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-  <input type="hidden" name="cmd" value="_s-xclick">
-  <input type="hidden" name="hosted_button_id" value="BSRAQPZB6QT6S">
-  <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-  <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
-</form>
-
 When you donate, email me with the date that you made the donation as well as the transaction id, and I'll add you to the credits and give you sneak peeks at the binaries and other game-related news.
+You can donate from the [main project page](http://mrozbarry.github.com/UndeadLand/).
 
 Shout-Outs
 ==========
