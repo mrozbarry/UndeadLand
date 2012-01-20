@@ -19,10 +19,12 @@ I don't have a time-frame for that yet, sadly.
 
 Can I...
 -----------------
-*Contribute Source-Code*
+_Contribute Source-Code_
+
 Well, yes and no.  Right now, I'm still hammering out a lot of the roadmap, so I'm going to discourage people volunteering until I have more code foundation.
 
-*Contributing Money*
+_Contributing Money_
+
 Sure, you can donate some funds to a poor programmer like me!
 PayPal is probably the easiest route.
 Feel free to donate towards buying me energy drinks and flowers for my to apologize for not going to bed at the same time as her.
