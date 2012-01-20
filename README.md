@@ -1,4 +1,4 @@
-![UndeadLand Logo](https://github.com/mrozbarry/UndeadLand/raw/master/dist/media/materials/logo/logo-large.png "UndeadLand")
+[![UndeadLand Logo](https://github.com/mrozbarry/UndeadLand/raw/master/dist/media/materials/logo/logo-large.png "UndeadLand")](http://mrozbarry.github.com/UndeadLand/)
 
 Hurray, This is UndeadLand
 ==========================
