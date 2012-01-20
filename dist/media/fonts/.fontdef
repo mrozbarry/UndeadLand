@@ -1,0 +1,7 @@
+visitor
+{
+  type truetype
+  source visitor1.ttf
+  size 12
+  resolution 72
+}

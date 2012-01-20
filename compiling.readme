@@ -1,0 +1,49 @@
+This is my personal guide for getting your environment ready
+to compile Ogre, Bullet Physics, and UndeadLand.
+
+These instructions assume you have a basic understanding of
+MinGW and Msys, and CMake
+
+=======================
+ MinGW32 / MSys
+=======================
+
+1. Setting up Ogre3d
+
+  1.1 Grab a fresh copy of Ogre from here:
+      - http://www.ogre3d.org/download/source
+        - I have this extracted into ~/ogre3d
+        - Cmake: Configure + generate
+        - MSys: mingw32-make
+        
+  1.2 Set up the Environment Variable
+      - Right-click on My Computer, and select System Properties
+      - Go into Environment Variables
+      - Add a New System variable named OGRE_HOME and set the value
+        to the path where you have Ogre installed/compiled.
+      - (OPTIONAL) If you don't have boost installed, use the version
+        that comes with Ogre, and set a New System variable called
+        BOOST_ROOT and set it to path/to/Ogre/boost_x_xx (where x_xx
+        is the version in your version of Ogre).
+          
+  1.3 Hurrah, you're finished setting up Ogre!
+  
+2. Setting Up Bullet Physics
+
+  2.1 Grab a fresh copy of Bullet Physics from here:
+      - Package: http://code.google.com/p/bullet/downloads/detail?name=bullet-2.79-rev2440.zip&can=2&q=
+      - SVN: http://bullet.googlecode.com/svn/trunk/
+        - I have this extracted to ~/bulletphysics
+        - Cmake: Configure + generate
+        - MSys: mingw32-make
+          
+  2.2 Set up the Environment Variable
+      - Right-click on My Computer, and select System Properties
+      - Go into Environment Variables
+      - Add a New System variable named BULLET_HOME and set the value
+        to the path where you have Bullet Physics installed/compiled.
+        
+3. Compiling UndeadLand
+
+  3.1 
+        
