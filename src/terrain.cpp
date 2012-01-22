@@ -1,15 +1,20 @@
 
 #include "terrain.hpp"
 
-TerrainEngine::TerrainEngine( Ogre::SceneManager *scenemgr, Ogre::Camera *cam, Ogre::Light* light, bool usePaging, Ogre::String file_prefix, Ogre::String file_suffix )
+TerrainEngine::TerrainEngine( Ogre::SceneManager *scenemgr, Ogre::Camera *cam, Ogre::Light* light, Ogre::String file_prefix, Ogre::String file_suffix )
   : mTerrainGroup(0)
-  , mTerrainPaging(0)
+  //, mTerrainPaging(0)
   , mTerrainPos(1000,0,5000)
-  , mPageManager(0)
+  //, mPageManager(0)
   , mLayerEdit(1)
   , mTerrainsImported(false)
   , mSceneMgr(scenemgr)
-  , mUsePaging( usePaging )
+  , mCamera(cam)
+  //, mUsePaging( usePaging )
+  , mSlotX( 0 )
+  , mSlotY( 0 )
+  , mUpdateTerrains(true)
+  , mLockTerrains(false)
 {
   terrainSelectClear();
   
@@ -24,7 +29,9 @@ TerrainEngine::TerrainEngine( Ogre::SceneManager *scenemgr, Ogre::Camera *cam, O
   mTerrainGroup->setFilenameConvention( file_prefix, file_suffix );
   mTerrainGroup->setOrigin( mTerrainPos );
 
-  if( mUsePaging ) {
+  configureTerrainDefaults( light );
+  
+  /*if( mUsePaging ) {
     mPageManager = OGRE_NEW Ogre::PageManager( );
     mPageManager->setPageProvider( &mTerrainPageProvider );
     mPageManager->addCamera( cam );
@@ -38,27 +45,16 @@ TerrainEngine::TerrainEngine( Ogre::SceneManager *scenemgr, Ogre::Camera *cam, O
         defineTerrain(x, y, true);
     // sync load since we want everything in place when we start
     mTerrainGroup->loadAllTerrains(true);
-  }
-  
-  configureTerrainDefaults( light );
-  
-  if ( mTerrainsImported ) {
-    Ogre::TerrainGroup::TerrainIterator ti = mTerrainGroup->getTerrainIterator();
-    while(ti.hasMoreElements())
-    {
-      Ogre::Terrain* t = ti.getNext()->instance;
-      initBlendMaps(t);
-    }
-  }
+  //}*/
   
   mTerrainGroup->freeTemporaryResources();
+  
+  mTerrainGroup->convertWorldPositionToTerrainSlot( cam->getPosition(), &mSlotX, &mSlotY );
 }
 
 TerrainEngine::~TerrainEngine( )
 {
   terrainSelectClear();
-  OGRE_DELETE mTerrainPaging;
-  OGRE_DELETE mPageManager;
   OGRE_DELETE mTerrainGroup;
   OGRE_DELETE mTerrainGlobals;
 }
@@ -176,29 +172,97 @@ void TerrainEngine::onFrameRenderingQueued( void )
   if ( !mTerrainGroup->isDerivedDataUpdateInProgress() ) {
     if (mTerrainsImported)
     {
+      OgreConsole::getSingleton().print("Finished updating terrains");
       mTerrainGroup->saveAllTerrains(true);
       mTerrainsImported = false;
     }
   }
+
+  long int csx, csy;
+  mTerrainGroup->convertWorldPositionToTerrainSlot( mCamera->getPosition(), &csx, &csy );
+  if( ( ( ( csx != mSlotX ) || ( csy != mSlotY ) ) || mUpdateTerrains ) && !mLockTerrains ) {
+    
+    mSlotX = csx;
+    mSlotY = csy;
+    
+    long int slot_dist = TERRAIN_DIST+1;
+    long int xmin = mSlotX - slot_dist;
+    long int xmax = mSlotX + slot_dist;
+    long int ymin = mSlotY - slot_dist;
+    long int ymax = mSlotY + slot_dist;
+    
+    //mTerrainGroup->saveAllTerrains( true );
+    
+    for( long int sx = xmin; sx <= xmax; sx++ ) {
+      for( long int sy = ymin; sy <= ymax; sy++ ) {
+        Ogre::Terrain *t = mTerrainGroup->getTerrain( sx, sy );
+        if( ( sx == xmin ) || ( sx == xmax ) || ( sy == ymin ) || ( sy == ymax ) ) {
+          if( t ) {
+            Ogre::LogManager::getSingletonPtr()->logMessage("Unloading a terrain");
+            if( t->isModified() ) t->save( mTerrainGroup->generateFilename( sx, sy ) );
+            mTerrainGroup->unloadTerrain( sx, sy );
+          }
+        } else {
+          std::stringstream bmt;
+          if( !t ) {
+            defineTerrain( sx, sy, false );
+            t = mTerrainGroup->getTerrain( sx, sy );
+            mTerrainsImported = true;
+            bmt << "Defining terrain slot (" << sx << ", " << sy << ") > ";
+            Ogre::LogManager::getSingletonPtr()->logMessage( bmt.str() );
+          }
+          bmt << "load";
+          mTerrainGroup->loadTerrain( sx, sy, true );
+        }
+      }
+    }
+    mUpdateTerrains = false;
+  }
+}
+
+bool TerrainEngine::getTerrainLocked( void )
+{
+  return mLockTerrains;
+}
+
+void TerrainEngine::setTerrainLocked( bool lock )
+{
+  mLockTerrains = lock;
+}
+
+void TerrainEngine::fixCameraTerrain( Ogre::Camera *cam, float height )
+{
+  Ogre::Terrain *activeTerrain = mTerrainGroup->getTerrain( mSlotX, mSlotY );
+  Ogre::Vector3 tpos, cpos;
+  cpos = mCamera->getPosition();
+  activeTerrain->getTerrainPosition( cpos, &tpos );
+  cpos.y = tpos.y + height;
+  mCamera->setPosition( cpos );
 }
 
 void TerrainEngine::defineTerrain( long x, long y, bool flat )
 {
+  std::stringstream bmt;
+  bmt << "TerrainEngine::defineTerrain( " << x << ", " << y << ") > ";
   if (flat) {
+    bmt << "Generating new flat terrain";
     mTerrainGroup->defineTerrain( x, y, 0.0f );
-    mTerrainsImported = true;
+    //mTerrainsImported = true;
   } else {
     Ogre::String filename = mTerrainGroup->generateFilename(x, y);
     if( Ogre::ResourceGroupManager::getSingleton().resourceExists(mTerrainGroup->getResourceGroup(), filename) && !flat ) {
+      bmt << "Loading terrain from file";
       mTerrainGroup->defineTerrain(x, y);
     } else {
       //Ogre::Image img;
       //getTerrainImage(x % 2 != 0, y % 2 != 0, img);
       //mTerrainGroup->defineTerrain(x, y, &img);
-      mTerrainsImported = true;
       mTerrainGroup->defineTerrain( x, y, 0.0f );
+      bmt << "Default terrain (flat)";
+      //mTerrainsImported = true;
     }
   }
+  Ogre::LogManager::getSingletonPtr()->logMessage( bmt.str() );
 }
 
 void TerrainEngine::initBlendMaps( Ogre::Terrain *terrain )
@@ -258,28 +322,4 @@ void TerrainEngine::configureTerrainDefaults( Ogre::Light *light )
   defaultimp.layerList[2].worldSize = 50;
   defaultimp.layerList[2].textureNames.push_back("terrain-rock-ds");
   defaultimp.layerList[2].textureNames.push_back("terrain-rock-nh");
-}
-
-bool TerrainEngine::TerrainPageProvider::prepareProceduralPage( Ogre::Page* page, Ogre::PagedWorldSection* section )
-{
-  OgreConsole::getSingleton().print("TerrainEngine::TerrainPageProvider::prepareProceduralPage");
-  return false;
-}
-
-bool TerrainEngine::TerrainPageProvider::loadProceduralPage( Ogre::Page* page, Ogre::PagedWorldSection* section )
-{
-  OgreConsole::getSingleton().print("TerrainEngine::TerrainPageProvider::loadProceduralPage");
-  return false;
-}
-
-bool TerrainEngine::TerrainPageProvider::unloadProceduralPage( Ogre::Page* page, Ogre::PagedWorldSection* section )
-{
-  OgreConsole::getSingleton().print("TerrainEngine::TerrainPageProvider::unloadProceduralPage");
-  return true;
-}
-
-bool TerrainEngine::TerrainPageProvider::unprepareProceduralPage( Ogre::Page* page, Ogre::PagedWorldSection* section )
-{
-  OgreConsole::getSingleton().print("TerrainEngine::TerrainPageProvider::unprepareProceduralPage");
-  return true;
 }

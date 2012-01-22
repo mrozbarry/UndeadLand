@@ -2,5 +2,7 @@ C:/MinGW/msys/1.0/home/Alexander/procedural-world/./OgreMain.dll
 C:/MinGW/msys/1.0/home/Alexander/procedural-world/./RenderSystem_Direct3D9.dll
 C:/MinGW/msys/1.0/home/Alexander/procedural-world/./RenderSystem_GL.dll
 C:/MinGW/msys/1.0/home/Alexander/procedural-world/./libOIS.dll
+C:/MinGW/msys/1.0/home/Alexander/procedural-world/./OgreTerrain.dll
+C:/MinGW/msys/1.0/home/Alexander/procedural-world/./OgrePaging.dll
 C:/MinGW/msys/1.0/home/Alexander/procedural-world/./libboost_date_time-mgw45-mt-1_44.dll
 C:/MinGW/msys/1.0/home/Alexander/procedural-world/./libboost_thread-mgw45-mt-1_44.dll

@@ -59,7 +59,7 @@ if(NOT OIS_FOUND)
 	message(SEND_ERROR "Failed to find OIS.")
 endif()
 
-find_package(bullet)
+#find_package(bullet)
  
 # Find Boost
 if (NOT OGRE_BUILD_PLATFORM_IPHONE)
@@ -106,14 +106,6 @@ else (OGRE_Terrain_FOUND)
   message(SEND_ERROR "OgreTerrain Library not found.")
 endif(OGRE_Terrain_FOUND)
 
-#ogre_add_component_include_dir(Paging)
-if (OGRE_Paging_FOUND)
-  set(OGRE_LIBRARIES ${OGRE_LIBRARIES} ${OGRE_Paging_LIBRARIES})  
-  message(STATUS "Found OGRE_Paging: ${OGRE_Paging_LIBRARIES}")
-else (OGRE_Paging_FOUND)
-  message(SEND_ERROR "OgrePaging Library not found.")
-endif( OGRE_Paging_FOUND)
-
 
 set(HDRS
 	./include/BaseApplication.h
@@ -134,7 +126,7 @@ set(SRCS
 include_directories( ${OIS_INCLUDE_DIRS}
 	${OGRE_INCLUDE_DIRS}
 	${OGRE_SAMPLES_INCLUDEPATH}
-  ${BULLET_INCLUDE_DIRS}
+  #${BULLET_INCLUDE_DIRS}
   ./include/
 )
  
@@ -145,7 +137,7 @@ set_target_properties(UndeadLand PROPERTIES DEBUG_POSTFIX _d)
 target_link_libraries(UndeadLand
   ${OGRE_LIBRARIES}
   ${OIS_LIBRARIES}
-  ${BULLET_LIBRARIES}
+  #${BULLET_LIBRARIES}
 )
  
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/)
@@ -192,6 +184,8 @@ if(WIN32)
 		${OGRE_PLUGIN_DIR_REL}/RenderSystem_Direct3D9.dll
 		${OGRE_PLUGIN_DIR_REL}/RenderSystem_GL.dll
 		${OGRE_PLUGIN_DIR_REL}/libOIS.dll
+		${OGRE_PLUGIN_DIR_REL}/OgreTerrain.dll
+		${OGRE_PLUGIN_DIR_REL}/OgrePaging.dll
 		DESTINATION ./
 		CONFIGURATIONS Release RelWithDebInfo
 	)
@@ -200,6 +194,8 @@ if(WIN32)
 		${OGRE_PLUGIN_DIR_DBG}/RenderSystem_Direct3D9_d.dll
 		${OGRE_PLUGIN_DIR_DBG}/RenderSystem_GL_d.dll
 		${OGRE_PLUGIN_DIR_DBG}/libOIS_d.dll
+		${OGRE_PLUGIN_DIR_REL}/OgreTerrain_d.dll
+		${OGRE_PLUGIN_DIR_REL}/OgrePaging_d.dll
 		DESTINATION ./
 		CONFIGURATIONS Debug
 	)

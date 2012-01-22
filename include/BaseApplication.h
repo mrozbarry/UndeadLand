@@ -72,6 +72,7 @@ protected:
     Ogre::String mPluginsCfg;
     
     TerrainEngine *terrain;
+    bool mNoClip;
 
     // OgreBites
     OgreBites::SdkCameraMan *mCameraMan;       // basic camera controller

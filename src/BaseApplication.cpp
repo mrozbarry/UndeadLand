@@ -16,7 +16,8 @@ UndeadLand::UndeadLand(void)
     mInputManager(0),
     mMouse(0),
     mKeyboard(0),
-    mFilterMode(0)
+    mFilterMode(0),
+    mNoClip(false)
 {
 }
 
@@ -279,6 +280,8 @@ bool UndeadLand::frameRenderingQueued(const Ogre::FrameEvent& evt)
     
     terrain->onFrameRenderingQueued( );
     
+    if( !mNoClip ) terrain->fixCameraTerrain( mCamera, 40.0f );
+    
     return true;
 }
 //-------------------------------------------------------------------------------------
@@ -350,6 +353,13 @@ bool UndeadLand::keyPressed( const OIS::KeyEvent &arg )
 
         mCamera->setPolygonMode(pm);
         //mDetailsPanel->setParamValue(10, newVal);
+    }
+    else if(arg.key == OIS::KC_V)   // refresh all textures
+    {
+        mNoClip = !mNoClip;
+        std::stringstream msg;
+        msg << "No-Clip: " << ( mNoClip ? "On" : "Off" );
+        OgreConsole::getSingleton().print( msg.str() );
     }
     else if(arg.key == OIS::KC_F5)   // refresh all textures
     {

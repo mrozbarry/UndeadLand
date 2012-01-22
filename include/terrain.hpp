@@ -2,11 +2,11 @@
 #include <OgreRoot.h>
 #include <OgreConfigFile.h>
 #include <OgreResourceGroupManager.h>
+#include <OgreCamera.h>
 #include <Terrain/OgreTerrain.h>
 #include <Terrain/OgreTerrainGroup.h>
 #include <Terrain/OgreTerrainQuadTreeNode.h>
 #include <Terrain/OgreTerrainMaterialGeneratorA.h>
-#include <Terrain/OgreTerrainPaging.h>
 
 #include <cmath>
 #include <algorithm>
@@ -17,17 +17,14 @@
 #ifndef __terrain_hpp__
 #define __terrain_hpp__ 1
 
-#define TERRAIN_PAGE_MIN_X 0
-#define TERRAIN_PAGE_MIN_Y 0
-#define TERRAIN_PAGE_MAX_X 0
-#define TERRAIN_PAGE_MAX_Y 0
-
 #define TERRAIN_WORLD_SIZE 12000.0f
-#define TERRAIN_SIZE 129
+#define TERRAIN_SIZE  129
+#define TERRAIN_DIST  2
 
-class TerrainEngine {
+class TerrainEngine
+{
 public:
-  TerrainEngine( Ogre::SceneManager *scenemgr, Ogre::Camera *cam, Ogre::Light* light, bool usePaging = false, Ogre::String file_prefix = "undeadland", Ogre::String file_suffix = "dat" );
+  TerrainEngine( Ogre::SceneManager *scenemgr, Ogre::Camera *cam, Ogre::Light* light, Ogre::String file_prefix = "undeadland", Ogre::String file_suffix = "dat" );
   ~TerrainEngine( );
   
   typedef struct TerrainSelect {
@@ -47,16 +44,20 @@ public:
   
   void onFrameRenderingQueued( );
   
+  bool getTerrainLocked( void );
+  void setTerrainLocked( bool lock );
+  
+  void fixCameraTerrain( Ogre::Camera *cam, float height = 35.0f );
+
 protected:
   void defineTerrain( long x, long y, bool flat = false );
   void initBlendMaps( Ogre::Terrain *terrain );
   void configureTerrainDefaults( Ogre::Light *light );
-
+  
+  Ogre::Camera *mCamera;
+  
   Ogre::TerrainGlobalOptions* mTerrainGlobals;
   Ogre::TerrainGroup* mTerrainGroup;
-  //bool mPaging;
-  Ogre::TerrainPaging* mTerrainPaging;
-  Ogre::PageManager* mPageManager;
   Ogre::Vector3 mTerrainPos;
   
   Ogre::SceneNode* mEditNode;
@@ -70,17 +71,10 @@ protected:
   //Ogre::SceneNode* mEditNode;
   bool mTerrainsImported;
   
-  bool mUsePaging;
-
-  class TerrainPageProvider : public Ogre::PageProvider
-  {
-  public:
-    bool prepareProceduralPage(Ogre::Page* page, Ogre::PagedWorldSection* section);
-    bool loadProceduralPage(Ogre::Page* page, Ogre::PagedWorldSection* section);
-    bool unloadProceduralPage(Ogre::Page* page, Ogre::PagedWorldSection* section);
-    bool unprepareProceduralPage(Ogre::Page* page, Ogre::PagedWorldSection* section);
-  };
-  TerrainPageProvider mTerrainPageProvider;
+  long int mSlotX, mSlotY;
+  bool mUpdateTerrains;
+  
+  bool mLockTerrains;
   
   //typedef std::list<Ogre::Entity*> EntityList;
 };
