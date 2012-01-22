@@ -19,7 +19,7 @@
 
 #define TERRAIN_WORLD_SIZE 12000.0f
 #define TERRAIN_SIZE  129
-#define TERRAIN_DIST  2
+#define TERRAIN_DIST  1
 
 class TerrainEngine
 {
@@ -32,6 +32,11 @@ public:
     Ogre::Vector3   position;
     Ogre::Real      radius;
   } TerrainSelect;
+  
+  typedef struct TerrainQueue {
+    Ogre::Terrain   *terrain;
+    long int        x, y;
+  } TerrainQueue;
   
   void terrainSelect( Ogre::Terrain *terrain, Ogre::Vector3 position, Ogre::Real radius = 10.0f );
   TerrainSelect *terrainSelect( void );
@@ -75,6 +80,9 @@ protected:
   bool mUpdateTerrains;
   
   bool mLockTerrains;
+  
+  std::vector< TerrainQueue > loadQueue;
+  std::vector< TerrainQueue > unloadQueue;
   
   //typedef std::list<Ogre::Entity*> EntityList;
 };
