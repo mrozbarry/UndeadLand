@@ -102,6 +102,7 @@ void UndeadLand::createFrameListener(void)
     mGorilla = new Gorilla::Silverback();
     mGorilla->loadAtlas("dejavu");
     mScreen = mGorilla->createScreen( mViewport, "dejavu");
+    mHud = mGrorilla->createScreen( mViewport, "dejavu" );
     
     mConsole = new OgreConsole();
     mConsole->init(mScreen);
@@ -130,7 +131,7 @@ void UndeadLand::createScene(void)
 
   mSceneMgr->setAmbientLight(Ogre::ColourValue(0.2, 0.2, 0.2));
 
-  terrain = new TerrainEngine( mSceneMgr, mCamera, light );
+  terrain = new TerrainEngine( "wolf159", mRoot, mSceneMgr, mCamera, light );
 }
 //-------------------------------------------------------------------------------------
 void UndeadLand::destroyScene(void)

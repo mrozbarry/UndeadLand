@@ -22,6 +22,7 @@
 #include "Gorilla.h"
 #include "OgreConsoleForGorilla.h"
 #include "terrain.hpp"
+#include "main.hpp"
 
 class UndeadLand : public Ogre::FrameListener, public Ogre::WindowEventListener, public OIS::KeyListener, public OIS::MouseListener
 {
@@ -32,6 +33,8 @@ public:
     virtual void go(void);
     
     bool LoadImage(const Ogre::String& texture_name, const Ogre::String& texture_path);
+    
+    void updateHud();
 
 protected:
     virtual bool setup();
@@ -87,6 +90,7 @@ protected:
     // Gorilla
     Gorilla::Silverback*    mGorilla;
     Gorilla::Screen*        mScreen;
+    Gorilla::Screen*        mHud;
     OgreConsole*            mConsole;
     int                     mFilterMode;
 };

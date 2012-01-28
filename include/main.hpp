@@ -33,5 +33,6 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT );
 int main(int argc, char *argv[]);
 #endif
 
+int hashString( std::string value );
 
 #endif /* __main_hpp__ */

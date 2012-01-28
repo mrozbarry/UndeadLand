@@ -113,6 +113,7 @@ set(HDRS
 	./include/Gorilla.h
 	./include/OgreConsoleForGorilla.h
 	./include/terrain.hpp
+  ./include/perlin.h
 )
  
 set(SRCS
@@ -121,6 +122,7 @@ set(SRCS
 	./src/Gorilla.cpp
 	./src/OgreConsoleForGorilla.cpp
 	./src/terrain.cpp
+	./src/perlin.cpp
 )
  
 include_directories( ${OIS_INCLUDE_DIRS}

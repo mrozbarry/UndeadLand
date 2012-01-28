@@ -23,3 +23,13 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
+int hashString( std::string value )
+{
+  int hash = 0;
+  int n = (int)value.size();
+  for( int i = 0; i < n; i++ ) {
+    hash += ((int)value[i])*31^(n-(i+1));
+  }
+  return hash;
+}
