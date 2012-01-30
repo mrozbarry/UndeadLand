@@ -13,7 +13,7 @@ TerrainEngine::TerrainEngine( Ogre::String seed, Ogre::Root *root, Ogre::SceneMa
   , mSlotY(0)
   , mUpdateTerrains(true)
   , mLockTerrains(false)
-  , mPerlin(16, 0.0001, 900, hashString( seed ))
+  , mPerlin(16, 0.0001, 900, hashString(seed))
 {
   terrainSelectClear();
   
@@ -29,14 +29,6 @@ TerrainEngine::TerrainEngine( Ogre::String seed, Ogre::Root *root, Ogre::SceneMa
   configureTerrainDefaults( light );
   
   mTerrainGroup->convertWorldPositionToTerrainSlot( cam->getPosition(), &mSlotX, &mSlotY );
-
-  // Make sure 0,0 (or wherever the camera is placed) loads first
-  TerrainQueue tq;
-  tq.terrain = NULL;
-  tq.x = 0;
-  tq.y = 0;
-  tq.load = true;
-  terrainQueuePush( tq );
 }
 
 TerrainEngine::~TerrainEngine( )
@@ -155,54 +147,21 @@ void TerrainEngine::changeTextureLayer( Ogre::uint8 layer )
 void TerrainEngine::onFrameRenderingQueued( void )
 {
   if ( !mTerrainGroup->isDerivedDataUpdateInProgress() ) {
-    TerrainQueue *tq = terrainQueueNext();
-    if( tq != NULL ) {
-      std::stringstream _log;
-      
-      if( tq->load == true ) {
-      
-        _log << "Loading terrain (" << tq->x << ", " << tq->y << ")";
-        Ogre::LogManager::getSingletonPtr()->logMessage( _log.str() );
-        if( !tq->terrain ) {
-          Ogre::LogManager::getSingletonPtr()->logMessage(" - Needs definition");
-          if( defineTerrain( tq->x, tq->y ) ) {
-            mTerrainGroup->loadTerrain( tq->x, tq->y, true );
-            tq->terrain = mTerrainGroup->getTerrain( tq->x, tq->y );
-            int sz = tq->terrain->getSize();
-            for( long tx = 0; tx < sz; tx++ ) {
-              for( long tz = 0; tz < sz; tz++ ) {
-                Ogre::Vector3 worldpos;
-                tq->terrain->getPoint( tx, tz, &worldpos );
-                tq->terrain->setHeightAtPoint( tx, tz, smoothNoise( worldpos.x, worldpos.z, 0.01f ) );
-              }
-            }
-            tq->terrain->update();
-            tq->terrain->dirty();
-            mTerrainGroup->update();
-          } else {
-            mTerrainGroup->loadTerrain( tq->x, tq->y, true );
-          }
-        }
-        
-      } else if( tq->load == false ) {
-      
-        if( tq->terrain ) {
-          _log << "Unloading terrain (" << tq->x << ", " << tq->y << ")";
-          Ogre::LogManager::getSingletonPtr()->logMessage( _log.str() );
-          if( tq->terrain->isModified() ) {
-            Ogre::LogManager::getSingletonPtr()->logMessage(" - Saving modifications");
-            tq->terrain->save( mTerrainGroup->generateFilename( tq->x, tq->y ) );
-          }
-          Ogre::LogManager::getSingletonPtr()->logMessage(" - Unloading from TerrainGroup");
-          mTerrainGroup->unloadTerrain( tq->x, tq->y );
-        }
-        
-      }
-      //terrainQueue.pop_back();
-      terrainQueuePop();
-      Ogre::LogManager::getSingletonPtr()->logMessage(" - Done");
+#ifdef USE_QUEUE
+    // Load/unload the next piece
+    for( int i = 0; i < 3; i++ ) {
+      TerrainQueue *tq = terrainQueueNext();
+      if( tq ) {
+        loadTerrain( tq->x, tq->y, !tq->load );
+        terrainQueuePop();
+        std::stringstream liq;
+        liq << "Terrain chunks left in queue: " << terrainQueue.size();
+        Ogre::LogManager::getSingletonPtr()->logMessage(liq.str());
+      } else { break; }
     }
+#endif
   }
+  
 
   long int csx, csy;
   mTerrainGroup->convertWorldPositionToTerrainSlot( mCamera->getPosition(), &csx, &csy );
@@ -216,18 +175,21 @@ void TerrainEngine::onFrameRenderingQueued( void )
     mUpdateTerrains = false;
     
     // Load Center first
-    TerrainQueue tq;
+    /*TerrainQueue tq;
     tq.terrain = mTerrainGroup->getTerrain( mSlotX, mSlotY );
     tq.x = mSlotX;
     tq.y = mSlotY;
     tq.load = true;
     terrainQueuePush( tq, true ); // Set as next priority!
+    */
+    
+    loadTerrain( mSlotX, mSlotY );
 
     // Loop through distances
-    for( long int dist = 1; dist < TERRAIN_DIST; dist++ ) {
-      terrainQueueAtDistance( dist, false );
+    for( long int dist = 0; dist < TERRAIN_DIST; dist++ ) {
+      terrainQueueAtDistance( dist, true );
     }
-    terrainQueueAtDistance( TERRAIN_DIST, false );
+    //terrainQueueAtDistance( TERRAIN_DIST, false );
     
   }
 }
@@ -334,6 +296,7 @@ float TerrainEngine::smoothNoise( float x, float y, float scale )
   return corners + sides + center;
 }
 
+#ifdef USE_QUEUE
 void TerrainEngine::terrainQueuePush( TerrainQueue& tq, bool inFront )
 {
   /*if( terrainQueue.size() ) {
@@ -361,11 +324,16 @@ void TerrainEngine::terrainQueuePush( TerrainQueue& tq, bool inFront )
       }
     }
   }*/
-  if( inFront == true ) {
+  std::stringstream qp;
+  qp << "Pushing (" << tq.x << ", " << tq.y << ") to the ";
+  if( inFront ) {
     terrainQueue.push_front( tq );
+    qp << "Front";
   } else {
     terrainQueue.push_back( tq );
+    qp << "Back";
   }
+  Ogre::LogManager::getSingletonPtr()->logMessage( qp.str() );
 }
 
 TerrainEngine::TerrainQueue *TerrainEngine::terrainQueueNext( void )
@@ -378,6 +346,7 @@ void TerrainEngine::terrainQueuePop( void )
 {
   if( terrainQueue.size() > 0 ) terrainQueue.pop_front();
 }
+#endif
 
 void TerrainEngine::terrainQueueAtDistance( long int d, bool load )
 {
@@ -392,38 +361,97 @@ void TerrainEngine::terrainQueueAtDistance( long int d, bool load )
   // Top and Bottom rows
   for( long int _x = xmin; _x <= xmax; _x++ ) {
     // Top
+#ifdef USE_QUEUE
     t = mTerrainGroup->getTerrain( _x, ymin );
     tq.terrain = t;
     tq.x = _x;
     tq.y = ymin;
     tq.load = load;
     terrainQueuePush( tq );
+#else
+    loadTerrain( _x, ymin, !load );
+#endif
     
     // Bottom
+#ifdef USE_QUEUE
     t = mTerrainGroup->getTerrain( _x, ymax );
     tq.terrain = t;
     tq.x = _x;
     tq.y = ymax;
     tq.load = load;
     terrainQueuePush( tq );
+#else
+    loadTerrain( _x, ymax, !load );
+#endif
   }
   
   // Left and Right rows
   for( long int _y = ymin+1; _y < ymax; _y++ ) {
     // Left
+#ifdef USE_QUEUE
     t = mTerrainGroup->getTerrain( xmin, _y );
     tq.terrain = t;
     tq.x = xmin;
     tq.y = _y;
     tq.load = load;
     terrainQueuePush( tq );
+#else
+    loadTerrain( xmin, _y, !load );
+#endif
     
     // Right
+#ifdef USE_QUEUE
     t = mTerrainGroup->getTerrain( xmax, _y );
     tq.terrain = t;
     tq.x = xmax;
     tq.y = _y;
     tq.load = load;
     terrainQueuePush( tq );
+#else
+    loadTerrain( xmax, _y, !load );
+#endif
   }
 }
+
+void TerrainEngine::loadTerrain( long int x, long int y, bool unload )
+{
+  std::stringstream _log;
+  Ogre::Terrain *terrain = mTerrainGroup->getTerrain( x, y );
+  if( !unload ) {
+    _log << "Loading terrain (" << x << ", " << y << ")";
+    Ogre::LogManager::getSingletonPtr()->logMessage( _log.str() );
+    if( !terrain ) {
+      Ogre::LogManager::getSingletonPtr()->logMessage(" - Needs definition");
+      if( defineTerrain( x, y ) ) {
+        mTerrainGroup->loadTerrain( x, y, true );
+        terrain = mTerrainGroup->getTerrain( x, y );
+        int sz = terrain->getSize();
+        for( long tx = 0; tx < sz; tx++ ) {
+          for( long tz = 0; tz < sz; tz++ ) {
+            Ogre::Vector3 worldpos;
+            terrain->getPoint( tx, tz, &worldpos );
+            terrain->setHeightAtPoint( tx, tz, smoothNoise( worldpos.x, worldpos.z, 0.01f ) );
+          }
+        }
+        terrain->update();
+        terrain->dirty();
+        mTerrainGroup->update();
+      } else {
+        mTerrainGroup->loadTerrain( x, y, true ); // May need to be true?
+      }
+    }
+  } else {
+    if( terrain ) {
+      _log << "Unloading terrain (" << x << ", " << y << ")";
+      Ogre::LogManager::getSingletonPtr()->logMessage( _log.str() );
+      if( terrain->isModified() ) {
+        Ogre::LogManager::getSingletonPtr()->logMessage(" - Saving modifications");
+        terrain->save( mTerrainGroup->generateFilename( x, y ) );
+      }
+      Ogre::LogManager::getSingletonPtr()->logMessage(" - Unloading from TerrainGroup");
+      mTerrainGroup->unloadTerrain( x, y );
+    }
+  }
+  Ogre::LogManager::getSingletonPtr()->logMessage(" - Done");
+}
+

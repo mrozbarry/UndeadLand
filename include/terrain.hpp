@@ -24,6 +24,8 @@
 #define TERRAIN_SIZE  513
 #define TERRAIN_DIST  2
 
+#define USE_QUEUE 1
+
 class TerrainEngine
 {
 public:
@@ -88,12 +90,16 @@ protected:
   void initBlendMaps( Ogre::Terrain *terrain );
   void configureTerrainDefaults( Ogre::Light *light );
   
+  void loadTerrain( long int x, long int y, bool unload = false );
+  
 private:
   float smoothNoise( float _x, float _y, float scale = 1.0f );
   
+#ifdef USE_QUEUE
   void terrainQueuePush( TerrainQueue& tq, bool inFront = false );
   TerrainQueue *terrainQueueNext( void );
   void terrainQueuePop( void );
+#endif
   
   void terrainQueueAtDistance( long int d, bool load = true );
   
