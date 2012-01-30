@@ -225,7 +225,7 @@ void TerrainEngine::onFrameRenderingQueued( void )
 
     // Loop through distances
     for( long int dist = 1; dist < TERRAIN_DIST; dist++ ) {
-      terrainQueueAtDistance( dist, true );
+      terrainQueueAtDistance( dist, false );
     }
     terrainQueueAtDistance( TERRAIN_DIST, false );
     
@@ -336,7 +336,7 @@ float TerrainEngine::smoothNoise( float x, float y, float scale )
 
 void TerrainEngine::terrainQueuePush( TerrainQueue& tq, bool inFront )
 {
-  if( terrainQueue.size() ) {
+  /*if( terrainQueue.size() ) {
     std::deque<TerrainQueue>::iterator it;
     for ( it = terrainQueue.begin(); it < terrainQueue.end(); it++ ) {
       TerrainQueue& t = *it;
@@ -351,16 +351,16 @@ void TerrainEngine::terrainQueuePush( TerrainQueue& tq, bool inFront )
             return;
           }
         }
-        /*if( t.load != tq.load ) { // They would cancel each other out
+        if( t.load != tq.load ) { // They would cancel each other out
           std::stringstream reject;
           reject << "Rejecting (" << tq.x << ", " << tq.y << ")[load=" << tq.load << "] and Removing (" << t.x << ", " << t.y << ")[load=" << t.load << "] from queue: Actions would cancel each other out";
           Ogre::LogManager::getSingletonPtr()->logMessage( reject.str() );
           terrainQueue.erase( it );
           return;
-        }*/
+        }
       }
     }
-  }
+  }*/
   if( inFront == true ) {
     terrainQueue.push_front( tq );
   } else {

@@ -22,7 +22,7 @@
 
 #define TERRAIN_WORLD_SIZE 12000.0f
 #define TERRAIN_SIZE  513
-#define TERRAIN_DIST  5
+#define TERRAIN_DIST  2
 
 class TerrainEngine
 {
