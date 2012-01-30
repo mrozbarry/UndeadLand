@@ -19,6 +19,8 @@
 #include <SdkTrays.h>
 #include <SdkCameraMan.h>
 
+#include <irrKlang.h>
+
 #include "Gorilla.h"
 #include "OgreConsoleForGorilla.h"
 #include "terrain.hpp"
@@ -92,7 +94,12 @@ protected:
     Gorilla::Screen*        mScreen;
     Gorilla::Screen*        mHud;
     OgreConsole*            mConsole;
+    
+    // Rendering preferences
     int                     mFilterMode;
+    
+    // IrrKlang
+    irrklang::ISoundEngine* soundeng;
 };
 
 /* Console Callbacks */

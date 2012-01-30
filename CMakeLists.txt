@@ -130,6 +130,7 @@ include_directories( ${OIS_INCLUDE_DIRS}
 	${OGRE_SAMPLES_INCLUDEPATH}
   #${BULLET_INCLUDE_DIRS}
   ./include/
+  ./include/irrKlang/
 )
  
 add_executable(UndeadLand WIN32 ${HDRS} ${SRCS})
@@ -140,6 +141,7 @@ target_link_libraries(UndeadLand
   ${OGRE_LIBRARIES}
   ${OIS_LIBRARIES}
   #${BULLET_LIBRARIES}
+  IrrKlang
 )
  
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/)

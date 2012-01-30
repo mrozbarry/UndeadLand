@@ -21,8 +21,8 @@
 #define __terrain_hpp__ 1
 
 #define TERRAIN_WORLD_SIZE 12000.0f
-#define TERRAIN_SIZE  257
-#define TERRAIN_DIST  1
+#define TERRAIN_SIZE  513
+#define TERRAIN_DIST  5
 
 class TerrainEngine
 {
@@ -91,9 +91,11 @@ protected:
 private:
   float smoothNoise( float _x, float _y, float scale = 1.0f );
   
-  void terrainQueuePush( TerrainQueue& tq );
+  void terrainQueuePush( TerrainQueue& tq, bool inFront = false );
   TerrainQueue *terrainQueueNext( void );
   void terrainQueuePop( void );
+  
+  void terrainQueueAtDistance( long int d, bool load = true );
   
   Ogre::Root *mRoot;
   

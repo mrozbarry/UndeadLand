@@ -19,6 +19,8 @@ UndeadLand::UndeadLand(void)
     mFilterMode(0),
     mNoClip(false)
 {
+  soundeng = irrklang::createIrrKlangDevice();
+  if( !soundeng ) Ogre::LogManager::getSingletonPtr()->logMessage( "Could not initialize sound engine" );
 }
 
 //-------------------------------------------------------------------------------------
@@ -102,7 +104,7 @@ void UndeadLand::createFrameListener(void)
     mGorilla = new Gorilla::Silverback();
     mGorilla->loadAtlas("dejavu");
     mScreen = mGorilla->createScreen( mViewport, "dejavu");
-    mHud = mGrorilla->createScreen( mViewport, "dejavu" );
+    //mHud = mGorilla->createScreen( mViewport, "dejavu" );
     
     mConsole = new OgreConsole();
     mConsole->init(mScreen);
@@ -130,12 +132,18 @@ void UndeadLand::createScene(void)
   light->setSpecularColour(Ogre::ColourValue(0.4, 0.4, 0.4));
 
   mSceneMgr->setAmbientLight(Ogre::ColourValue(0.2, 0.2, 0.2));
+  
+  if( soundeng ) {
+    //soundeng->play2D( "dist/media/sounds/Pong_Beat_100_bpm_www.loopartists.com.wav", true );
+    soundeng->play2D( "dist/media/sounds/looperman-loop-00500098-00050813-shortbusmusic-piano-in-bm7-a-e.wav", true );
+  }
 
-  terrain = new TerrainEngine( "wolf159", mRoot, mSceneMgr, mCamera, light );
+  terrain = new TerrainEngine( "this is a ridiculously long string", mRoot, mSceneMgr, mCamera, light );
 }
 //-------------------------------------------------------------------------------------
 void UndeadLand::destroyScene(void)
 {
+  if( soundeng ) soundeng->drop();
   if( terrain ) delete terrain;
 }
 //-------------------------------------------------------------------------------------
@@ -187,7 +195,13 @@ void UndeadLand::loadResources(void)
     Ogre::Image combined;
     
     // Terrain Dirt
-    if( LoadImage( "terrain-dirt-ds", "terrain_dirt_diffusespecular.png" ) == false ) {
+    LoadImage( "terrain-dirt-ds", "dist/media/materials/textures/terrain_dirt_diffusespecular.png" );
+    LoadImage( "terrain-dirt-nh", "dist/media/materials/textures/terrain_dirt_normalheight.png" );
+    LoadImage( "terrain-grass-ds", "dist/media/materials/textures/terrain_grass_diffusespecular.png" );
+    LoadImage( "terrain-grass-nh", "dist/media/materials/textures/terrain_grass_normalheight.png" );
+    LoadImage( "terrain-rock-ds", "dist/media/materials/textures/terrain_rock_diffusespecular.png" );
+    LoadImage( "terrain-rock-nh", "dist/media/materials/textures/terrain_rock_normalheight.png" );
+    /*if( LoadImage( "terrain-dirt-ds", "terrain_dirt_diffusespecular.png" ) == false ) {
       combined.loadTwoImagesAsRGBA("terrain_dirt.jpg", "terrain_dirt_SPEC.bmp", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, Ogre::PF_BYTE_RGBA);
       combined.save("terrain_dirt_diffusespecular.png");
     }
@@ -214,7 +228,7 @@ void UndeadLand::loadResources(void)
     if( LoadImage( "terrain-rock-nh", "terrain_rock_normalheight.png" ) == false ) {
       combined.loadTwoImagesAsRGBA("terrain_rock_NORM.tga", "terrain_rock_DISP.bmp", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, Ogre::PF_BYTE_RGBA);
       combined.save("terrain_rock_normalheight.png");
-    }
+    }*/
 }
 //-------------------------------------------------------------------------------------
 void UndeadLand::go(void)

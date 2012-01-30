@@ -13,13 +13,16 @@ TerrainEngine::TerrainEngine( Ogre::String seed, Ogre::Root *root, Ogre::SceneMa
   , mSlotY(0)
   , mUpdateTerrains(true)
   , mLockTerrains(false)
-  , mPerlin(8, 1, 200, hashString( seed ))
+  , mPerlin(16, 0.0001, 900, hashString( seed ))
 {
   terrainSelectClear();
   
   mTerrainGlobals = OGRE_NEW Ogre::TerrainGlobalOptions();
 
   mTerrainGroup = OGRE_NEW Ogre::TerrainGroup( mSceneMgr, Ogre::Terrain::ALIGN_X_Z, TERRAIN_SIZE, TERRAIN_WORLD_SIZE );
+  
+  std::stringstream fpx;
+  
   mTerrainGroup->setFilenameConvention( file_prefix, file_suffix );
   mTerrainGroup->setOrigin( mTerrainPos );
 
@@ -156,7 +159,7 @@ void TerrainEngine::onFrameRenderingQueued( void )
     if( tq != NULL ) {
       std::stringstream _log;
       
-      if( tq->load = true ) {
+      if( tq->load == true ) {
       
         _log << "Loading terrain (" << tq->x << ", " << tq->y << ")";
         Ogre::LogManager::getSingletonPtr()->logMessage( _log.str() );
@@ -181,16 +184,18 @@ void TerrainEngine::onFrameRenderingQueued( void )
           }
         }
         
-      } else if( tq->load = false ) {
+      } else if( tq->load == false ) {
       
-        _log << "Unloading terrain (" << tq->x << ", " << tq->y << ")";
-        Ogre::LogManager::getSingletonPtr()->logMessage( _log.str() );
-        if( tq->terrain->isModified() ) {
-          Ogre::LogManager::getSingletonPtr()->logMessage(" - Saving modifications");
-          tq->terrain->save( mTerrainGroup->generateFilename( tq->x, tq->y ) );
+        if( tq->terrain ) {
+          _log << "Unloading terrain (" << tq->x << ", " << tq->y << ")";
+          Ogre::LogManager::getSingletonPtr()->logMessage( _log.str() );
+          if( tq->terrain->isModified() ) {
+            Ogre::LogManager::getSingletonPtr()->logMessage(" - Saving modifications");
+            tq->terrain->save( mTerrainGroup->generateFilename( tq->x, tq->y ) );
+          }
+          Ogre::LogManager::getSingletonPtr()->logMessage(" - Unloading from TerrainGroup");
+          mTerrainGroup->unloadTerrain( tq->x, tq->y );
         }
-        Ogre::LogManager::getSingletonPtr()->logMessage(" - Unloading from TerrainGroup");
-        mTerrainGroup->unloadTerrain( tq->x, tq->y );
         
       }
       //terrainQueue.pop_back();
@@ -210,33 +215,20 @@ void TerrainEngine::onFrameRenderingQueued( void )
     mSlotY = csy;
     mUpdateTerrains = false;
     
-    long int slot_dist = TERRAIN_DIST+1;
-    long int xmin = mSlotX - slot_dist;
-    long int xmax = mSlotX + slot_dist;
-    long int ymin = mSlotY - slot_dist;
-    long int ymax = mSlotY + slot_dist;
-    
-    //mTerrainGroup->saveAllTerrains( true );
-    
-    for( long int sx = xmin; sx <= xmax; sx++ ) {
-      for( long int sy = ymin; sy <= ymax; sy++ ) {
-        Ogre::Terrain *t = mTerrainGroup->getTerrain( sx, sy );
-        TerrainQueue tq;
-        tq.terrain = t;
-        tq.x = sx;
-        tq.y = sy;
-        std::stringstream queuetalk;
-        if( ( sx == xmin ) || ( sx == xmax ) || ( sy == ymin ) || ( sy == ymax ) ) {
-          if( t ) {
-            tq.load = false;
-            terrainQueuePush( tq );
-          }
-        } else {
-          tq.load = true;
-          terrainQueuePush( tq );
-        }
-      }
+    // Load Center first
+    TerrainQueue tq;
+    tq.terrain = mTerrainGroup->getTerrain( mSlotX, mSlotY );
+    tq.x = mSlotX;
+    tq.y = mSlotY;
+    tq.load = true;
+    terrainQueuePush( tq, true ); // Set as next priority!
+
+    // Loop through distances
+    for( long int dist = 1; dist < TERRAIN_DIST; dist++ ) {
+      terrainQueueAtDistance( dist, true );
     }
+    terrainQueueAtDistance( TERRAIN_DIST, false );
+    
   }
 }
 
@@ -257,8 +249,7 @@ void TerrainEngine::fixCameraTerrain( Ogre::Camera *cam, float height )
   Ogre::Vector3 tpos, cpos;
   cpos = mCamera->getPosition();
   activeTerrain->getTerrainPosition( cpos, &tpos );
-  float theight = activeTerrain->getHeightAtPoint( tpos.x, tpos.z );
-  cpos.y = tpos.y + theight + height;
+  cpos.y = height + activeTerrain->getHeightAtWorldPosition( cpos );
   mCamera->setPosition( cpos );
 }
 
@@ -319,8 +310,8 @@ void TerrainEngine::configureTerrainDefaults( Ogre::Light *light )
   defaultimp.terrainSize = TERRAIN_SIZE;
   defaultimp.worldSize = TERRAIN_WORLD_SIZE;
   defaultimp.inputScale = 600;
-  defaultimp.minBatchSize = 129;
-  defaultimp.maxBatchSize = 513;
+  defaultimp.minBatchSize = 65;
+  defaultimp.maxBatchSize = 129;
   
   defaultimp.layerList.resize(3);
   defaultimp.layerList[0].worldSize = 200;
@@ -334,19 +325,16 @@ void TerrainEngine::configureTerrainDefaults( Ogre::Light *light )
   defaultimp.layerList[2].textureNames.push_back("terrain-rock-nh");
 }
 
-float TerrainEngine::smoothNoise( float _x, float _y, float scale )
+float TerrainEngine::smoothNoise( float x, float y, float scale )
 {
-  float x = _x * scale;
-  float y = _y * scale;
-  
-  float corners = ( mPerlin.Get(x-1, y-1) + mPerlin.Get(x+1, y-1) + mPerlin.Get(x-1, y+1) + mPerlin.Get(x+1, y+1) ) / 16;
-  float sides   = ( mPerlin.Get(x-1, y) + mPerlin.Get(x+1, y) + mPerlin.Get(x, y-1) + mPerlin.Get(x, y+1) ) /  8;
+  float corners = ( mPerlin.Get(x-scale, y-scale) + mPerlin.Get(x+scale, y-scale) + mPerlin.Get(x-scale, y+scale) + mPerlin.Get(x+scale, y+scale) ) / 16;
+  float sides   = ( mPerlin.Get(x-scale, y) + mPerlin.Get(x+scale, y) + mPerlin.Get(x, y-scale) + mPerlin.Get(x, y+scale) ) /  8;
   float center  =  mPerlin.Get(x, y) / 4;
   
   return corners + sides + center;
 }
 
-void TerrainEngine::terrainQueuePush( TerrainQueue& tq )
+void TerrainEngine::terrainQueuePush( TerrainQueue& tq, bool inFront )
 {
   if( terrainQueue.size() ) {
     std::deque<TerrainQueue>::iterator it;
@@ -354,23 +342,30 @@ void TerrainEngine::terrainQueuePush( TerrainQueue& tq )
       TerrainQueue& t = *it;
       if( ( t.x == tq.x ) && ( t.y == tq.y ) ) {
         if( t.load == tq.load ) {
-          std::stringstream reject;
-          reject << "Rejecting (" << tq.x << ", " << tq.y << ")[load=" << tq.load << "] from queue: Duplicate";
-          Ogre::LogManager::getSingletonPtr()->logMessage( reject.str() );
-          return;
+          if( inFront ) {
+            terrainQueue.erase( it );
+          } else {
+            std::stringstream reject;
+            reject << "Rejecting (" << tq.x << ", " << tq.y << ")[load=" << tq.load << "] from queue: Duplicate";
+            Ogre::LogManager::getSingletonPtr()->logMessage( reject.str() );
+            return;
+          }
         }
-        if( t.load != tq.load ) { // They would cancel each other out
+        /*if( t.load != tq.load ) { // They would cancel each other out
           std::stringstream reject;
           reject << "Rejecting (" << tq.x << ", " << tq.y << ")[load=" << tq.load << "] and Removing (" << t.x << ", " << t.y << ")[load=" << t.load << "] from queue: Actions would cancel each other out";
           Ogre::LogManager::getSingletonPtr()->logMessage( reject.str() );
           terrainQueue.erase( it );
           return;
-        }
+        }*/
       }
     }
   }
-    
-  terrainQueue.push_back( tq );
+  if( inFront == true ) {
+    terrainQueue.push_front( tq );
+  } else {
+    terrainQueue.push_back( tq );
+  }
 }
 
 TerrainEngine::TerrainQueue *TerrainEngine::terrainQueueNext( void )
@@ -382,4 +377,53 @@ TerrainEngine::TerrainQueue *TerrainEngine::terrainQueueNext( void )
 void TerrainEngine::terrainQueuePop( void )
 {
   if( terrainQueue.size() > 0 ) terrainQueue.pop_front();
+}
+
+void TerrainEngine::terrainQueueAtDistance( long int d, bool load )
+{
+  Ogre::Terrain *t;
+  TerrainQueue tq;
+  
+  long int xmin = mSlotX - d;
+  long int xmax = mSlotX + d;
+  long int ymin = mSlotY - d;
+  long int ymax = mSlotY + d;
+  
+  // Top and Bottom rows
+  for( long int _x = xmin; _x <= xmax; _x++ ) {
+    // Top
+    t = mTerrainGroup->getTerrain( _x, ymin );
+    tq.terrain = t;
+    tq.x = _x;
+    tq.y = ymin;
+    tq.load = load;
+    terrainQueuePush( tq );
+    
+    // Bottom
+    t = mTerrainGroup->getTerrain( _x, ymax );
+    tq.terrain = t;
+    tq.x = _x;
+    tq.y = ymax;
+    tq.load = load;
+    terrainQueuePush( tq );
+  }
+  
+  // Left and Right rows
+  for( long int _y = ymin+1; _y < ymax; _y++ ) {
+    // Left
+    t = mTerrainGroup->getTerrain( xmin, _y );
+    tq.terrain = t;
+    tq.x = xmin;
+    tq.y = _y;
+    tq.load = load;
+    terrainQueuePush( tq );
+    
+    // Right
+    t = mTerrainGroup->getTerrain( xmax, _y );
+    tq.terrain = t;
+    tq.x = xmax;
+    tq.y = _y;
+    tq.load = load;
+    terrainQueuePush( tq );
+  }
 }
