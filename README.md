@@ -4,7 +4,7 @@ Hurray, This is UndeadLand
 ==========================
 What is it?
 -----------
-In the words of Indigo Mantoya, "let me explain, no there is too much, let me summarize."
+In the words of Inigo Montoya, "let me explain, no there is too much, let me summarize."
 UndeadLand is an Open Source, Procedurally Generated, Zombie Survival First-Person Game.
 The goal is to use modern graphic techniques to make a completely procedural world, complete with cities, survivors, and more!
 Right now, it is still being heavily developed, and this repo is mostly for me to have a backup of my dev sources right now, and is not even remotely in a playable state.
