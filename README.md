@@ -27,7 +27,7 @@ _Contributing Money_
 
 Sure, you can donate some funds to a poor programmer like me!
 PayPal is probably the easiest route.
-Feel free to donate towards buying me energy drinks and flowers for my to apologize for not going to bed at the same time as her.
+Feel free to donate towards buying me energy drinks and flowers for my wife to apologize for not going to bed at the same time as her.
 If you donate, you'll be added to the credits of the game, and you'll optionally get notified about the status of the game.
 
 When you donate, email me with the date that you made the donation as well as the transaction id, and I'll add you to the credits and give you sneak peeks at the binaries and other game-related news.
