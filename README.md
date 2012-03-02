@@ -4,7 +4,7 @@ Hurray, This is UndeadLand
 ==========================
 What is it?
 -----------
-In the words of Indigo Mantoya, "let me explain, no there is too much, let me summarize."
+In the words of Inigo Montoya, "let me explain, no there is too much, let me summarize."
 UndeadLand is an Open Source, Procedurally Generated, Zombie Survival First-Person Game.
 The goal is to use modern graphic techniques to make a completely procedural world, complete with cities, survivors, and more!
 Right now, it is still being heavily developed, and this repo is mostly for me to have a backup of my dev sources right now, and is not even remotely in a playable state.
@@ -27,7 +27,7 @@ _Contributing Money_
 
 Sure, you can donate some funds to a poor programmer like me!
 PayPal is probably the easiest route.
-Feel free to donate towards buying me energy drinks and flowers for my to apologize for not going to bed at the same time as her.
+Feel free to donate towards buying me energy drinks and flowers for my wife to apologize for not going to bed at the same time as her.
 If you donate, you'll be added to the credits of the game, and you'll optionally get notified about the status of the game.
 
 When you donate, email me with the date that you made the donation as well as the transaction id, and I'll add you to the credits and give you sneak peeks at the binaries and other game-related news.
