@@ -132,7 +132,7 @@ void UndeadLand::createScene(void)
   light->setDiffuseColour(Ogre::ColourValue::White);
   light->setSpecularColour(Ogre::ColourValue(0.4, 0.4, 0.4));
 
-  mSceneMgr->setAmbientLight(Ogre::ColourValue(0.2, 0.2, 0.2));
+  mSceneMgr->setAmbientLight(Ogre::ColourValue(0.5, 0.5, 0.5));
   
   if( soundeng ) {
     //soundeng->play2D( "dist/media/sounds/Pong_Beat_100_bpm_www.loopartists.com.wav", true );
@@ -152,7 +152,8 @@ void UndeadLand::createViewports(void)
 {
     // Create one viewport, entire window
     mViewport = mWindow->addViewport(mCamera);
-    mViewport->setBackgroundColour(Ogre::ColourValue(0,0,0));
+    //mViewport->setBackgroundColour(Ogre::ColourValue(0,0,0));
+    mViewport->setBackgroundColour(Ogre::ColourValue(0.8f,0.8f,1.0f));
 
     // Alter the camera aspect ratio to match the viewport
     mCamera->setAspectRatio(

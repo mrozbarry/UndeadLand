@@ -17,12 +17,19 @@
 cmake_minimum_required(VERSION 2.6)
  
 project(ProcWorld)
- 
+
 if(WIN32)
 	set(CMAKE_MODULE_PATH "$ENV{OGRE_HOME}/CMake/;${CMAKE_MODULE_PATH}")
 	set(OGRE_SAMPLES_INCLUDEPATH
 		$ENV{OGRE_HOME}/Samples/include
 	)
+  # This should bother unix like systems, but in WIndows (MinGW), this is important
+	#if (MINGW)
+  #  ADD_DEFINITIONS(-static-libgcc)
+  #  SET(CMAKE_CXX_LINK_EXECUTABLE “${CMAKE_CXX_LINK_EXECUTABLE} -static-libgcc”)
+  #  ADD_DEFINITIONS(-static-libstdc++)
+  #  SET(CMAKE_CXX_LINK_EXECUTABLE “${CMAKE_CXX_LINK_EXECUTABLE} -static-libstdc++”)
+  #endif(MINGW)
 endif(WIN32)
  
 if(UNIX)
@@ -98,7 +105,7 @@ endif()
 #ogre_add_component_include_dir(Terrain)
 if (OGRE_Terrain_FOUND)
 # pretty sure the following include is unneeded
-  # include_directories(${OGRE_Terrain_INCLUDE_DIRS})
+   include_directories(${OGRE_Terrain_INCLUDE_DIRS})
 # append OgreTerrain to the end of the OGRE_LIBRARIES variable
   set(OGRE_LIBRARIES ${OGRE_LIBRARIES} ${OGRE_Terrain_LIBRARIES})  
   message(STATUS "Found OGRE_Terrain: ${OGRE_Terrain_LIBRARIES}")
@@ -106,6 +113,14 @@ else (OGRE_Terrain_FOUND)
   message(SEND_ERROR "OgreTerrain Library not found.")
 endif(OGRE_Terrain_FOUND)
 
+#ogre_add_component_include_dir(Paging)
+if (OGRE_Paging_FOUND)
+   include_directories(${OGRE_Paging_INCLUDE_DIRS})
+  set(OGRE_LIBRARIES ${OGRE_LIBRARIES} ${OGRE_Paging_LIBRARIES})  
+  message(STATUS "Found OGRE_Paging: ${OGRE_Paging_LIBRARIES}")
+else (OGRE_Paging_FOUND)
+  message(SEND_ERROR "OgrePaging Library not found.")
+endif(OGRE_Paging_FOUND)
 
 set(HDRS
 	./include/BaseApplication.h
@@ -127,6 +142,8 @@ set(SRCS
  
 include_directories( ${OIS_INCLUDE_DIRS}
 	${OGRE_INCLUDE_DIRS}
+  ${OGRE_HOME}/include/Ogre
+  ${OGRE_HOME}/include/Ogre/Terrain
 	${OGRE_SAMPLES_INCLUDEPATH}
   #${BULLET_INCLUDE_DIRS}
   ./include/
