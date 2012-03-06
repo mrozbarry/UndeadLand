@@ -1,6 +1,17 @@
 
 #include "terrain.hpp"
 
+#ifdef USE_PAGEMANAGER
+float smoothNoise( Perlin *mPerlin, float x, float y, float scale )
+{
+  float corners = ( mPerlin->Get(x-scale, y-scale) + mPerlin->Get(x+scale, y-scale) + mPerlin->Get(x-scale, y+scale) + mPerlin->Get(x+scale, y+scale) ) / 16;
+  float sides   = ( mPerlin->Get(x-scale, y) + mPerlin->Get(x+scale, y) + mPerlin->Get(x, y-scale) + mPerlin->Get(x, y+scale) ) /  8;
+  float center  =  mPerlin->Get(x, y) / 4;
+  
+  return corners + sides + center;
+}
+#endif
+
 TerrainEngine::TerrainEngine( Ogre::String seed, Ogre::Root *root, Ogre::SceneManager *scenemgr, Ogre::Camera *cam, Ogre::Light* light, Ogre::String file_prefix, Ogre::String file_suffix )
   : mRoot(root)
   , mTerrainGroup(0)
@@ -13,7 +24,11 @@ TerrainEngine::TerrainEngine( Ogre::String seed, Ogre::Root *root, Ogre::SceneMa
   , mSlotY(0)
   , mUpdateTerrains(true)
   , mLockTerrains(false)
+#if USE_PAGING
   , mTerrainPageProvider( hashString(seed) )
+#else
+  , mPerlin(16, 0.0001, 900, seed)
+#endif
 {
   terrainSelectClear();
   
@@ -28,8 +43,11 @@ TerrainEngine::TerrainEngine( Ogre::String seed, Ogre::Root *root, Ogre::SceneMa
 
   configureTerrainDefaults( light );
   
-  mTerrainGroup->convertWorldPositionToTerrainSlot( cam->getPosition(), &mSlotX, &mSlotY );
+  //mTerrainGroup->convertWorldPositionToTerrainSlot( cam->getPosition(), &mSlotX, &mSlotY );
+  mSlotX = mSlotY = 0;
+  cam->setPosition( mTerrainGroup->getTerrainSlotPosition( 0, 0 ) );
   
+#if USE_PAGING
   mPageManager = OGRE_NEW Ogre::PageManager();
   mPageManager->setPageProvider(&mTerrainPageProvider);
   mPageManager->addCamera(mCamera);
@@ -38,6 +56,7 @@ TerrainEngine::TerrainEngine( Ogre::String seed, Ogre::Root *root, Ogre::SceneMa
   mTerrainPaging->createWorldSection(world, mTerrainGroup, 1024, 2048, 
     TERRAIN_PAGE_MIN_X, TERRAIN_PAGE_MIN_Y, 
     TERRAIN_PAGE_MAX_X, TERRAIN_PAGE_MAX_Y);
+#endif
     
   mTerrainGroup->freeTemporaryResources();
 }
@@ -48,8 +67,10 @@ TerrainEngine::~TerrainEngine( )
   terrainSelectClear();
   OGRE_DELETE mTerrainGroup;
   OGRE_DELETE mTerrainGlobals;
+#if USE_PAGING
   OGRE_DELETE mTerrainPaging;
   OGRE_DELETE mPageManager;
+#endif
 }
 
 void TerrainEngine::terrainSelect( Ogre::Terrain *terrain, Ogre::Vector3 position, Ogre::Real radius )
@@ -159,8 +180,16 @@ void TerrainEngine::changeTextureLayer( Ogre::uint8 layer )
 
 void TerrainEngine::onFrameRenderingQueued( void )
 {
-  mTerrainGroup->convertWorldPositionToTerrainSlot( mCamera->getPosition(), &mSlotX, &mSlotY );
-#if 0
+  long int csx, csy;
+  mTerrainGroup->convertWorldPositionToTerrainSlot( mCamera->getPosition(), &csx, &csy );
+  bool slotChange = ( ( csx != mSlotX ) || ( csy != mSlotY ) )
+  bool loads = (qload.size() == 0);
+  bool unloads = (qunload.size() == 0);
+  if( !slotChange || loads || unloads || mLockTerrains ) return;
+  mSlotX = csx;
+  mSlotY = csy;
+  
+#ifndef USE_PAGING
   if ( !mTerrainGroup->isDerivedDataUpdateInProgress() ) {
     // Load/unload the next piece
     for( int i = 0; i < 3; i++ ) {
@@ -176,9 +205,7 @@ void TerrainEngine::onFrameRenderingQueued( void )
   }
   
 
-  long int csx, csy;
-  mTerrainGroup->convertWorldPositionToTerrainSlot( mCamera->getPosition(), &csx, &csy );
-  if( ( ( ( csx != mSlotX ) || ( csy != mSlotY ) ) || mUpdateTerrains ) && !mLockTerrains ) {
+  if( slotChange || mUpdateTerrains ) {
     
     std::stringstream tus;
     tus << "Updating terrain load/unload list; Camera Position=" << mCamera->getPosition() << "; mSlotX,Y=(" << mSlotX << ", " << mSlotY << "); CameraSlotX,Y=("<< csx <<","<< csy <<")";
@@ -231,15 +258,13 @@ void TerrainEngine::fixCameraTerrain( Ogre::Camera *cam, float height )
 
 bool TerrainEngine::defineTerrain( long x, long y )
 {
-  bool needsWork = false;
   Ogre::String filename = mTerrainGroup->generateFilename(x, y);
   if( Ogre::ResourceGroupManager::getSingleton().resourceExists(mTerrainGroup->getResourceGroup(), filename) ) {
     mTerrainGroup->defineTerrain(x, y);
-  } else {
-    mTerrainGroup->defineTerrain( x, y, 0.0f );
-    needsWork = true;
+    return false;
   }
-  return needsWork;
+  mTerrainGroup->defineTerrain( x, y, 0.0f );
+  return true;
 }
 
 void TerrainEngine::initBlendMaps( Ogre::Terrain *terrain )
@@ -301,7 +326,7 @@ void TerrainEngine::configureTerrainDefaults( Ogre::Light *light )
   defaultimp.layerList[2].textureNames.push_back("terrain-rock-nh");
 }
 
-/*void TerrainEngine::loadTerrain( long int x, long int y, bool unload )
+void TerrainEngine::loadTerrain( long int x, long int y, bool unload )
 {
   std::stringstream _log;
   Ogre::Terrain *terrain = mTerrainGroup->getTerrain( x, y );
@@ -341,14 +366,102 @@ void TerrainEngine::configureTerrainDefaults( Ogre::Light *light )
     }
   }
   Ogre::LogManager::getSingletonPtr()->logMessage(" - Done");
-}*/
+}
 
-float smoothNoise( Perlin *mPerlin, float x, float y, float scale )
+void TerrainEngine::loadTerrainRadius( int radius )
 {
-  float corners = ( mPerlin->Get(x-scale, y-scale) + mPerlin->Get(x+scale, y-scale) + mPerlin->Get(x-scale, y+scale) + mPerlin->Get(x+scale, y+scale) ) / 16;
-  float sides   = ( mPerlin->Get(x-scale, y) + mPerlin->Get(x+scale, y) + mPerlin->Get(x, y-scale) + mPerlin->Get(x, y+scale) ) /  8;
-  float center  =  mPerlin->Get(x, y) / 4;
+  if( radius == 0 ) {
+    loadTerrainQueue( mSlotX, mSlotY );
+  } else {
+    long int lx, ly;
+    long int minx, miny, maxx, maxy;
+    minx = mSlotX-radius;
+    maxx = mSlotX+radius;
+    miny = mSlotY-radius;
+    maxy = mSlotY+radius;
+    for( lx = minx; lx < maxx; lx++ ) loadTerrainQueue( lx, miny );
+    for( ly = miny; ly < maxy; ly++ ) loadTerrainQueue( maxx, ly );
+    for( lx = maxx; lx > minx; lx-- ) loadTerrainQueue( lx, maxy );
+    for( ly = maxy; ly > miny; ly-- ) loadTerrainQueue( minx, ly );
+  }
+}
+
+void TerrainEngine::unloadTerrainRadius( int radius )
+{
+  if( radius == 0 ) {
+    unloadTerrainQueue( mSlotX, mSlotY );
+  } else {
+    long int lx, ly;
+    long int minx, miny, maxx, maxy;
+    minx = mSlotX-radius;
+    maxx = mSlotX+radius;
+    miny = mSlotY-radius;
+    maxy = mSlotY+radius;
+    for( lx = minx; lx < maxx; lx++ ) unloadTerrainQueue( lx, miny );
+    for( ly = miny; ly < maxy; ly++ ) unloadTerrainQueue( maxx, ly );
+    for( lx = maxx; lx > minx; lx-- ) unloadTerrainQueue( lx, maxy );
+    for( ly = maxy; ly > miny; ly-- ) unloadTerrainQueue( minx, ly );
+  }
+}
+
+bool TerrainEngine::nextLoad( long int& x, long int& y )
+{
+  if( qload.size() == 0 ) return false;
+  x = qload[0].x;
+  y = qload[0].y;
+  qload.pop_front();
+  return true;
+}
+
+bool TerrainEngine::nextUnLoad( long int& x, long int& y )
+{
+  if( qunload.size() == 0 ) return false;
+  x = qunload[0].x;
+  y = qunload[0].y;
+  qunload.pop_front();
+  return true;
+}
+
+bool TerrainEngine::loadTerrainQueue( long int x, long int y )
+{
+  if( loadIsQueued(x,y) || unloadIsQueued(x,y) || slotLoaded(x,y) ) return false;
+  TerrainQueueItem item;
+  item.x = x; item.y = y;
+  qload.push_back( item );
+  return true;
+}
+
+bool TerrainEngine::unloadTerrainQueue( long int x, long int y )
+{
+  if( loadIsQueued(x,y) || unloadIsQueued(x,y) || slotLoaded(x,y) ) return false;
+  TerrainQueueItem item;
+  item.x = x; item.y = y;
+  qunload.push_back( item );
+  return true;
+}
+
+bool TerrainEngine::loadIsQueued( long int x, long int y )
+{
+  for( unsigned int c = 0; c < qload.size(); c++ ) if( qload[c].x == x && qload[c].y == y ) { return true; }
+  return false;
+}
+
+bool TerrainEngine::unloadIsQueued( long int x, long int y )
+{
+  for( unsigned int c = 0; c < qunload.size(); c++ ) if( qunload[c].x == x && qunload[c].y == y ) { return true; }
+  return false;
+}
+
+bool TerrainEngine::slotLoaded( long int x, long int y )
+{
+  return mTerrainGroup->getTerrain( x, y ) == NULL ? false : true;
+}
+
+float TerrainEngine::smoothNoise( float x, float y, float scale )
+{
+  float corners = ( mPerlin.Get(x-scale, y-scale) + mPerlin.Get(x+scale, y-scale) + mPerlin.Get(x-scale, y+scale) + mPerlin.Get(x+scale, y+scale) ) / 16;
+  float sides   = ( mPerlin.Get(x-scale, y) + mPerlin.Get(x+scale, y) + mPerlin.Get(x, y-scale) + mPerlin.Get(x, y+scale) ) /  8;
+  float center  =  mPerlin.Get(x, y) / 4;
   
   return corners + sides + center;
 }
-

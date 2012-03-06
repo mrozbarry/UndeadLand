@@ -3,12 +3,16 @@
 #include <OgreConfigFile.h>
 #include <OgreResourceGroupManager.h>
 #include <OgreCamera.h>
+#ifdef USE_PAGEMANAGER
 #include <Paging/OgrePage.h>
 #include <Paging/OgrePageManager.h>
+#endif
 #include <Terrain/OgreTerrain.h>
 #include <Terrain/OgreTerrainGroup.h>
+#ifdef USE_PAGEMANAGER
 #include <Terrain/OgreTerrainPagedWorldSection.h>
 #include <Terrain/OgreTerrainPaging.h>
+#endif
 #include <Terrain/OgreTerrainQuadTreeNode.h>
 #include <Terrain/OgreTerrainMaterialGeneratorA.h>
 
@@ -24,14 +28,20 @@
 #ifndef __terrain_hpp__
 #define __terrain_hpp__ 1
 
-#define TERRAIN_WORLD_SIZE 12000.0f
+#define TERRAIN_WORLD_SIZE (12000.0f * 4.0f)
 #define TERRAIN_SIZE  1025
 
-#define TERRAIN_PAGE_MIN_X  0
-#define TERRAIN_PAGE_MIN_Y  0
-#define TERRAIN_PAGE_MAX_X  0
-#define TERRAIN_PAGE_MAX_Y  0
+#ifdef USE_PAGEMANAGER
+# define TERRAIN_PAGE_MIN_X   0
+# define TERRAIN_PAGE_MAX_X   0
+# define TERRAIN_PAGE_MIN_Y   0
+# define TERRAIN_PAGE_MAX_Y   0
+#else
+# define TERRAIN_LOAD_DIST    20
+# define TERRAIN_UNLOAD_DIST  25
+#endif
 
+#ifdef USE_PAGEMANAGER
 float smoothNoise( Perlin *mPerlin, float x, float y, float scale );
 
 class TerrainPP : public Ogre::PageProvider {
@@ -84,6 +94,7 @@ public:
   
   Perlin mPerlin;  
 };
+#endif
 
 class TerrainEngine
 {
@@ -96,6 +107,10 @@ public:
     Ogre::Vector3   position;
     Ogre::Real      radius;
   } TerrainSelect;
+  
+  typedef struct TerrainQueueItem {
+    long int        x, y;
+  };
   
   void terrainSelect( Ogre::Terrain *terrain, Ogre::Vector3 position, Ogre::Real radius = 10.0f );
   TerrainSelect *terrainSelect( void );
@@ -118,10 +133,22 @@ protected:
   void initBlendMaps( Ogre::Terrain *terrain );
   void configureTerrainDefaults( Ogre::Light *light );
   
-  //void loadTerrain( long int x, long int y, bool unload = false );
+  void loadTerrain( long int x, long int y, bool unload = false );
+  
+  void loadTerrainRadius( int radius );
+  void unloadTerrainRadius( int radius );
+  
+  bool nextLoad( long int& x, long int& y );
+  bool nextUnLoad( long int& x, long int& y );
+  
+  bool loadTerrainQueue( long int x, long int y );
+  bool unloadTerrainQueue( long int x, long int y );
+  bool loadIsQueued( long int x, long int y );
+  bool unloadIsQueued( long int x, long int y );
+  bool slotLoaded( long int x, long int y );
   
 private:
-  //float smoothNoise( float _x, float _y, float scale = 1.0f );
+  float smoothNoise( float _x, float _y, float scale = 1.0f );
   
   Ogre::Root *mRoot;
   
@@ -147,9 +174,14 @@ private:
   
   bool mLockTerrains;
   
+#ifdef USE_PAGEMANAGER
   TerrainPP mTerrainPageProvider;
   Ogre::TerrainPaging *mTerrainPaging;
   Ogre::PageManager *mPageManager;
+#else
+  Perlin  mPerlin;
+  std::deque< TerrainQueueItem > qload, qunload;
+#endif
   
   //typedef std::list<Ogre::Entity*> EntityList;
 };
